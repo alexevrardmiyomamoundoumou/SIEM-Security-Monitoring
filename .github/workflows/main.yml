@@ -1,0 +1,41 @@
+name: CI - pipeline & Test Docker Images
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name:  Checkout repository
+        uses: actions/checkout@v4
+
+      - name:  Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name:  Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: build Docker images
+        run: |
+          docker build -t user-service:latest ./user_service
+          docker build -t salle-service:latest ./salle-service
+          docker build -t reservation-service:latest ./reservation-service
+
+      - name: Run Tests (if applicable)
+        run: |
+          docker run --rm user-service pytest
+          docker run --rm salle-service pytest
+          docker run --rm reservation-service pytest
+
